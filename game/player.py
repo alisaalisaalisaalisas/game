@@ -218,8 +218,10 @@ class Player:
         
             if self.check_collision(platform):
                 # Создаем точный хитбокс для определения направления
-                player_hitbox = self.get_actual_hitbox()
-        
+                
+                if platform.platform_type == "triangle":
+                    self.handle_triangle_collision(platform)
+                    continue
                 # 🔥 ИСПРАВЛЕНИЕ: Используем правильные границы для разных типов платформ
                 if hasattr(platform, 'collision_rect'):
                     platform_left = platform.collision_rect.left
@@ -259,7 +261,6 @@ class Player:
                     self.handle_triangle_collision(platform)
                     continue
 
-                player_hitbox = self.get_actual_hitbox()
                 
                 # 🔥 ИСПРАВЛЕНИЕ: Используем правильные границы для разных типов платформ
                 if hasattr(platform, 'collision_rect'):
@@ -293,12 +294,14 @@ class Player:
         triangle_top = triangle.rect.top
         triangle_bottom = triangle.rect.bottom
         
+        if not (triangle_left <= player_hitbox.centerx <= triangle_right):
+               return
         # Вычисляем относительную позицию игрока на треугольнике (0 до 1)
         relative_x = (player_center_x - triangle_left) / triangle.rect.width
         
         # Треугольник: правый верхний → правый нижний → левый нижний
         # Вычисляем максимальную высоту на этой X позиции
-        max_y = triangle_bottom - (triangle_bottom - triangle_top) * (1 - relative_x)
+        max_y = triangle_bottom - triangle.rect.height * relative_x
         
         # Если игрок ниже допустимой высоты, размещаем его на поверхности
         if player_hitbox.bottom > max_y and self.velocity_y >= 0:

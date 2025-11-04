@@ -25,9 +25,7 @@ class Platform(pygame.sprite.Sprite):
         # 🔥 СОЗДАЕМ СПЕЦИАЛЬНЫЕ COLLISION_RECT ДЛЯ РАЗНЫХ ТИПОВ
         self.collision_rect = self.create_collision_rect()
         
-        # 🔥 ДЛЯ TRIANGLE СОЗДАЕМ МАСКУ ДЛЯ ТОЧНОЙ КОЛЛИЗИИ
-        if platform_type == "triangle":
-            self.collision_mask = self.create_triangle_mask()
+       
     
     def create_collision_rect(self):
         """Создает специальные collision rect для разных типов платформ"""
@@ -43,48 +41,18 @@ class Platform(pygame.sprite.Sprite):
             # 🔥 ДЛЯ ОСТАЛЬНЫХ: обычный rect
             return self.rect.copy()
     
-    def create_triangle_mask(self):
-        """Создает маску для треугольной коллизии (правый верхний → правый нижний → левый нижний)"""
-        mask_surface = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
-        
-        # 🔥 ТРЕУГОЛЬНИК: правый верхний → правый нижний → левый нижний
-        points = [
-            (self.rect.width, 0),           # Правый верхний угол
-            (self.rect.width, self.rect.height),  # Правый нижний угол  
-            (0, self.rect.height)           # Левый нижний угол
-        ]
-        pygame.draw.polygon(mask_surface, (255, 255, 255), points)
-        
-        return pygame.mask.from_surface(mask_surface)
+    
     
     def check_collision(self, other_rect):
         """🔥 УНИВЕРСАЛЬНАЯ ПРОВЕРКА КОЛЛИЗИЙ"""
+
         if not self.has_collision:
             return False
-            
-        if self.platform_type == "triangle" and hasattr(self, 'collision_mask'):
-            # 🔥 ДЛЯ TRIANGLE: используем маску для точной коллизии
-            return self.check_triangle_collision(other_rect)
-        else:
-            # 🔥 ДЛЯ ОСТАЛЬНЫХ: используем collision_rect
+                   
+        else:            
             return self.collision_rect.colliderect(other_rect)
     
-    def check_triangle_collision(self, other_rect):
-        """Проверка коллизии с треугольником с использованием маски"""
-        if not hasattr(self, 'collision_mask'):
-            return False
-            
-        # Создаем маску для объекта
-        other_surface = pygame.Surface((other_rect.width, other_rect.height), pygame.SRCALPHA)
-        other_surface.fill((255, 255, 255))
-        other_mask = pygame.mask.from_surface(other_surface)
-        
-        # Вычисляем смещение
-        offset_x = other_rect.x - self.rect.x
-        offset_y = other_rect.y - self.rect.y
-        
-        # Проверяем пересечение масок
-        return self.collision_mask.overlap(other_mask, (offset_x, offset_y))
+    
     
     def get_tile_image(self, platform_type):
         """🔥 ПОЛУЧАЕМ ТАЙЛ ИЗ TILESET ПО ТИПУ"""
@@ -109,7 +77,4 @@ class Platform(pygame.sprite.Sprite):
     def draw(self, screen, camera):
         screen.blit(self.image, camera.apply(self.rect))
         
-        # 🔥 ОТЛАДКА: показать collision_rect
-        if hasattr(self, 'collision_mask'):
-             
-             pygame.draw.rect(screen, (255, 0, 0), camera.apply(self.collision_rect), 2)
+        
