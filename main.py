@@ -102,7 +102,8 @@ class RPGPlatformer:
     
     def update(self):
         dt = self.clock.get_time() / 1000.0  # Delta time в секундах
-    
+        
+        # Обновление в зависимости от состояния
         if self.state == "game" and self.player and self.level:
             # ⏰ ДОБАВЛЕНО: Получаем текущее время игры
             current_time = (pygame.time.get_ticks() - self.game_start_time) / 1000.0
