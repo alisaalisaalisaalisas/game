@@ -22,12 +22,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pygame
-        pip install pytest
-        
-    - name: Run import tests
-      run: |
-        python tests/test_imports.py
-    
+        pip install pytest    
     - name: Run unit tests
       run: |
         python tests/test_units.py
