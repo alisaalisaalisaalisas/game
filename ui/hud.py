@@ -13,11 +13,21 @@ class HUD:
         self.heart_size = 30  # Размер сердечек
         
         # 🔧 ПОТОМ загружаем спрайты сердец
-        self.heart_full = self.load_heart_image("hud/hudheart_full.png")
-        self.heart_half = self.load_heart_image("hud/hudheart_half.png") 
-        self.heart_empty = self.load_heart_image("hud/hudheart_empty.png")
+        self.heart_full = self.load_heart_image("hud/hudHeart_full.png")
+        self.heart_half = self.load_heart_image("hud/hudHeart_half.png") 
+        self.heart_empty = self.load_heart_image("hud/hudHeart_empty.png")
         
-        print("🎯 HUD с сердцами инициализирован")
+        # 🏆 ЗАГРУЖАЕМ СПРАЙТЫ ДЛЯ НОВЫХ UI ЭЛЕМЕНТОВ
+        self.key_size = 30  # Размер иконки ключа
+        self.coin_size = 25  # Размер иконки монеты
+        
+        # Загружаем спрайты ключей и монет
+        self.load_collectible_sprites()
+        
+        # Шрифт для счетчика монет
+        self.coin_font = pygame.font.Font(None, 32)
+        
+        print("🎯 HUD с сердцами, ключами и монетами инициализирован")
     
     def load_heart_image(self, path):
         """Загружает изображение сердца с масштабированием"""
@@ -35,8 +45,42 @@ class HUD:
         pygame.draw.rect(surface, (255, 0, 0), (0, 0, self.heart_size, self.heart_size))
         return surface
     
+    def load_collectible_sprites(self):
+        """Загружает спрайты для ключей и монет"""
+        try:
+            from game.asset_loader import asset_loader
+            
+            # 🗝️ Загружаем спрайты ключей (используем желтый как основной)
+            self.key_sprite = asset_loader.load_image("Hud/hudKey_yellow.png", 1.0)
+            if self.key_sprite:
+                self.key_sprite = pygame.transform.scale(self.key_sprite, (self.key_size, self.key_size))
+            else:
+                # Заглушка для ключа
+                self.key_sprite = pygame.Surface((self.key_size, self.key_size))
+                self.key_sprite.fill((255, 255, 0))
+                pygame.draw.polygon(self.key_sprite, (255, 215, 0), 
+                                  [(5, 10), (15, 5), (25, 10), (20, 20), (10, 15)])
+            
+            # 🪙 Загружаем спрайт монеты
+            self.coin_sprite = asset_loader.load_image("Hud/hudCoin.png", 1.0)
+            if self.coin_sprite:
+                self.coin_sprite = pygame.transform.scale(self.coin_sprite, (self.coin_size, self.coin_size))
+            else:
+                # Заглушка для монеты
+                self.coin_sprite = pygame.Surface((self.coin_size, self.coin_size), pygame.SRCALPHA)
+                pygame.draw.circle(self.coin_sprite, (255, 215, 0), (self.coin_size//2, self.coin_size//2), self.coin_size//2)
+                pygame.draw.circle(self.coin_sprite, (255, 255, 0), (self.coin_size//2, self.coin_size//2), self.coin_size//2 - 3)
+                
+        except Exception as e:
+            print(f"❌ Ошибка загрузки спрайтов коллектаблов: {e}")
+            # Создаем заглушки
+            self.key_sprite = pygame.Surface((self.key_size, self.key_size))
+            self.key_sprite.fill((255, 255, 0))
+            self.coin_sprite = pygame.Surface((self.coin_size, self.coin_size))
+            self.coin_sprite.fill((255, 215, 0))
+    
     def draw(self, screen):
-        """Отрисовка HUD с сердцами"""
+        """Отрисовка HUD с сердцами, ключами и монетами"""
         try:
             # 🔥 ИСПРАВЛЕНИЕ: Получаем здоровье напрямую из health_component игрока
             if hasattr(self.player, 'health_component'):
@@ -52,7 +96,9 @@ class HUD:
             # 🔧 ОТРИСОВКА СЕРДЕЦ
             self.draw_hearts(screen, current_health, max_health)
             
-                       
+            # 🏆 ОТРИСОВКА КЛЮЧЕЙ И МОНЕТ
+            self.draw_collectibles(screen)
+            
             # 🔥 ОТОБРАЖЕНИЕ СОСТОЯНИЯ ИГРОКА (жив/мертв)
             if hasattr(self.player, 'is_alive') and not self.player.is_alive:
                 # 🔥 КРАСИВАЯ НАДПИСЬ СМЕРТИ ПО ЦЕНТРУ
@@ -118,3 +164,41 @@ class HUD:
                 screen.blit(self.heart_empty, (x_position, y_position))
             
             x_position += self.heart_size + 5  # Расстояние между сердцами
+    
+    def draw_collectibles(self, screen):
+        """Отрисовка собранных ключей и монет"""
+        # 🏆 Позиционирование - под сердцами, чтобы не было перекрытия
+        start_y = 50  # Начинаем ниже сердец
+        
+        # 🗝️ ОТРИСОВКА КЛЮЧЕЙ (слева вверху)
+        if hasattr(self.player, 'keys') and self.player.keys > 0:
+            key_x = 10
+            key_y = start_y
+            
+            for i in range(min(self.player.keys, 3)):  # Показываем максимум 3 ключа
+                screen.blit(self.key_sprite, (key_x, key_y + i * (self.key_size + 5)))
+        
+        # 🪙 ОТРИСОВКА СЧЕТЧИКА МОНЕТ (справа вверху)
+        if hasattr(self.player, 'coins') and self.player.coins > 0:
+            self.draw_coin_counter(screen)
+    
+    def draw_coin_counter(self, screen):
+        """Отрисовка счетчика монет с иконкой и количеством"""
+        # Позиция в правом верхнем углу
+        screen_width = screen.get_width()
+        coin_x = screen_width - 100  # Отступ от правого края
+        coin_y = 15  # На одном уровне с сердцами
+        
+        # 🪙 Рисуем иконку монеты
+        screen.blit(self.coin_sprite, (coin_x, coin_y))
+        
+        # 💰 Рисуем количество монет
+        coin_text = f"x {self.player.coins}"
+        text_surface = self.coin_font.render(coin_text, True, (255, 255, 255))
+        text_x = coin_x + self.coin_size + 5  # Справа от иконки
+        text_y = coin_y + (self.coin_size - text_surface.get_height()) // 2  # Центрируем по вертикали
+        
+        # Добавляем тень для лучшей читаемости
+        shadow_surface = self.coin_font.render(coin_text, True, (0, 0, 0))
+        screen.blit(shadow_surface, (text_x + 1, text_y + 1))
+        screen.blit(text_surface, (text_x, text_y))
