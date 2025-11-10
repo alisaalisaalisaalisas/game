@@ -52,8 +52,7 @@ class RPGPlatformer:
             
             # Игрок создаётся и затем привязывается к уровню
             self.player = Player(0, 0)
-            self.level.set_player(self.player)
-                     
+            self.level.set_player(self.player)                     
             self.camera = Camera(self.player, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
             self.hud = HUD(self.player)
 
@@ -65,7 +64,7 @@ class RPGPlatformer:
                 # Обновляем меню на режим завершения уровня
                 if isinstance(self.menu, MainMenu):
                     self.menu.set_level_completed(level_name)
-
+                    
             self.level.on_level_complete = on_level_complete
             
             # 🔄 Флаг активной игры

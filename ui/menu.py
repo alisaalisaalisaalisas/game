@@ -108,15 +108,22 @@ class MainMenu:
             if option == "В МЕНЮ":
                 print("🏠 Returning to main menu from level-complete screen")
                 self.level_completed_mode = False
+                # После завершения уровня запрещаем продолжение старой игры
+                self.app.has_active_game = False
                 self.app.go_to_menu()
             elif option == "ВЫБОР УРОВНЯ":
                 print("📜 Level select requested (stub) from level-complete screen")
                 self.level_completed_mode = False
+                # После завершения уровня запрещаем продолжение старой игры
+                self.app.has_active_game = False
                 # Здесь можно открыть экран выбора уровней; пока возвращаемся в обычное меню
                 self.app.go_to_menu()
             elif option == "СЛЕДУЮЩИЙ УРОВЕНЬ":
                 print("⏭ Next level requested from level-complete screen")
                 self.level_completed_mode = False
+                # После завершения уровня запрещаем продолжение старой игры,
+                # следующая игра всегда стартует заново/на новом уровне
+                self.app.has_active_game = False
                 # Заглушка: перезапуск level1; заменить на загрузку следующего уровня
                 self.app.start_game()
             return
