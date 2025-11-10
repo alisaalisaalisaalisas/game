@@ -8,10 +8,14 @@ from ..enemies.slime import Slime
 from ..enemies.snail import Snail
 from ..enemies.fly import Fly
 from ..items.items import Item
-from ..decorations import Decoration
+from ..decorations import Decoration, ExitDoor
 from ..asset_loader import asset_loader
 from ..traps.saw import Saw
 from ..traps.spikes import Spikes
+
+def default_level_complete_handler(level_name):
+    """Простой обработчик завершения уровня (можно заменить снаружи)."""
+    print(f"✅ Level '{level_name}' completed (default handler).")
 
 class Level:
     def __init__(self, name):
@@ -24,6 +28,11 @@ class Level:
         self.doors = pygame.sprite.Group()
         self.traps = pygame.sprite.Group()
         self.decorations = pygame.sprite.Group()
+        self.exit_doors = pygame.sprite.Group()
+
+        # Флаг завершения уровня и callback
+        self.completed = False
+        self.on_level_complete = default_level_complete_handler
         
         # Загрузка фона
         original_bg = asset_loader.load_image("backgrounds/colored_grass.png", 1)
@@ -247,14 +256,15 @@ class Level:
         
         # 🔥 ДЕКОРАЦИИ ИЗ OBJECTGROUP
         decorations_data = [
-            
-            # Замок (GID 363 = 289 + 74)
+            # Замок (GID 363 = 289 + 74) — визуальный замок над дверью
             (840, 1590-32, 32, 32, "lock_yellow"),
         ]
-        
+
         for x, y, w, h, deco_type in decorations_data:
             decoration = Decoration(x, y, w, h, deco_type)
             self.decorations.add(decoration)
+
+        
 
         box_data = [  
             # Ящики (GID 341 = 289 + 52)
@@ -268,6 +278,38 @@ class Level:
 
         print(f"✅ Objects loaded: {len(self.enemies)} врагов, {len(self.items)} предметов, {len(self.decorations)} декораций")
     
+    def check_exit_door_collision(self):
+        """
+        Проверяет столкновение игрока с дверью выхода.
+        Условие завершения уровня:
+        - игрок касается двери выхода
+        - дверь имеет жёлтый замок
+        - у игрока есть жёлтый ключ (player.has_yellow_key == True)
+        Если ключа нет — выводит сообщение в консоль (можно заменить на HUD).
+        """
+        if not self.player:
+            return
+    
+
+        player_rect = self.player.get_actual_hitbox() if hasattr(self.player, "get_actual_hitbox") else self.player.rect
+
+        for decoration in self.decorations:
+            if player_rect.colliderect(decoration.rect):
+                # Ожидаем жёлтый замок
+                if decoration.decoration_type == "lock_yellow":
+                    if getattr(self.player, "has_yellow_key", False):
+                        if not self.completed:
+                            print("✅ Условие выхода выполнено: есть жёлтый ключ и столкновение с дверью.")
+                            self.completed = True
+                            # Вызываем обработчик завершения уровня
+                            if callable(self.on_level_complete):
+                                self.on_level_complete(self.name)
+                    else:
+                        # Нет ключа — сообщение (можно интегрировать с HUD)
+                        print("🚪 You need a yellow key to open this door")
+                        
+                # если будут двери других цветов — можно расширить здесь
+
     def get_platform_type_by_gid(self, gid):
         """Определяет тип платформы по GID"""
         # 🔥 СООТВЕТСТВИЕ GID ТИПАМ ПЛАТФОРМ ИЗ spritesheet_ground
@@ -290,7 +332,8 @@ class Level:
             364: "dec3", 
             372: "dec4",       
             380: "dec5",
-            349: "dec6"
+            349: "dec6",
+            363: "lock_yellow"
             # Добавьте другие GID по мере необходимости
         }
         return decoration_types.get(gid,"f" )
@@ -310,6 +353,7 @@ class Level:
             
         if self.player:
             self.check_item_collection()
+            self.check_exit_door_collision()
     
     def check_item_collection(self):
         """Проверка сбора предметов игроком"""
@@ -321,6 +365,8 @@ class Level:
                     if item_type == "coin":
                         self.player.coins += 1
                     elif item_type == "key_yellow":
+                        # логический флаг ключа для замка
+                        self.player.collect_yellow_key()
                         self.player.keys += 1
                     elif item_type == "jewel_blue":
                         self.player.jewels += 1

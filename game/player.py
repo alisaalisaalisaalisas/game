@@ -44,6 +44,9 @@ class Player:
         self.coins = 0
         self.keys = 0
         self.jewels = 0
+
+        # 🔑 КЛЮЧИ ДЛЯ ЗАМКОВ
+        self.has_yellow_key = False
         
         # Coyote Time
         self.coyote_time = 0.15
@@ -92,6 +95,11 @@ class Player:
         self.old_x = x
         self.old_y = y
     
+    def collect_yellow_key(self):
+        """Отмечает, что игрок подобрал жёлтый ключ."""
+        self.has_yellow_key = True
+        print("🔑 Yellow key collected")
+
     def load_sprites(self):
         """Загружает все спрайты для анимаций"""
         self.idle_sprite = asset_loader.load_image("player/alienPink_front.png", 0.6)

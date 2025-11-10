@@ -1,17 +1,39 @@
 import pygame
 
 class MainMenu:
+    """
+    Главное меню + режим 'меню завершения уровня'.
+
+    Обычный режим:
+      - Продолжить игру (если есть активная)
+      - Новая игра
+      - Загрузить
+      - Настройки
+      - Выход
+
+    Режим завершения уровня (level_completed_mode=True):
+      - Уровень пройден (заголовок)
+      - В МЕНЮ
+      - ВЫБОР УРОВНЯ
+      - СЛЕДУЮЩИЙ УРОВЕНЬ
+    """
     def __init__(self, app):
         self.app = app
         self.selected_index = 0
         self.font = pygame.font.Font(None, 48)
         self.title_font = pygame.font.Font(None, 72)
-        
+
+        # Флаг и данные для экрана завершения уровня
+        self.level_completed_mode = False
+        self.completed_level_name = None
+
         print("📋 MainMenu initialized")
         print(f"📱 Menu app reference: {self.app}")
     
     def get_menu_options(self):
-        """Получение опций меню в зависимости от состояния игры"""
+        """Получение опций меню в зависимости от состояния игры."""
+        if self.level_completed_mode:
+            return ["В МЕНЮ", "ВЫБОР УРОВНЯ", "СЛЕДУЮЩИЙ УРОВЕНЬ"]
         if self.app.has_active_game:
             return ["Продолжить игру", "Новая игра", "Загрузить", "Настройки", "Выход"]
         else:
@@ -80,7 +102,26 @@ class MainMenu:
         option = self.options[self.selected_index]
         print(f"🚀 Executing menu action: {option}")
         print(f"📱 App reference in select_option: {self.app}")
-        
+
+        # Режим завершения уровня
+        if self.level_completed_mode:
+            if option == "В МЕНЮ":
+                print("🏠 Returning to main menu from level-complete screen")
+                self.level_completed_mode = False
+                self.app.go_to_menu()
+            elif option == "ВЫБОР УРОВНЯ":
+                print("📜 Level select requested (stub) from level-complete screen")
+                self.level_completed_mode = False
+                # Здесь можно открыть экран выбора уровней; пока возвращаемся в обычное меню
+                self.app.go_to_menu()
+            elif option == "СЛЕДУЮЩИЙ УРОВЕНЬ":
+                print("⏭ Next level requested from level-complete screen")
+                self.level_completed_mode = False
+                # Заглушка: перезапуск level1; заменить на загрузку следующего уровня
+                self.app.start_game()
+            return
+
+        # Обычное главное меню
         if option == "Продолжить игру":
             print("🔄 Continuing existing game...")
             self.app.resume_game()
@@ -95,6 +136,16 @@ class MainMenu:
             print("👋 Exiting game...")
             self.app.running = False
     
+    def set_level_completed(self, level_name: str | None = None):
+        """
+        Переключает меню в режим завершения уровня.
+        Вызывается из main.py через level.on_level_complete.
+        """
+        self.level_completed_mode = True
+        self.completed_level_name = level_name
+        self.selected_index = 0
+        print(f"🏁 MainMenu: level '{level_name}' completed, showing completion options")
+
     def update(self, dt):
         pass
     
@@ -102,7 +153,15 @@ class MainMenu:
         screen.fill((30, 30, 60))
         
         # Заголовок
-        title = self.title_font.render("RPG PLATFORMER", True, (255, 255, 255))
+        if self.level_completed_mode:
+            # Экран завершения уровня
+            title_text = "УРОВЕНЬ ПРОЙДЕН"
+            if self.completed_level_name:
+                title_text += f" ({self.completed_level_name})"
+            title = self.title_font.render(title_text, True, (255, 255, 0))
+        else:
+            title = self.title_font.render("RPG PLATFORMER", True, (255, 255, 255))
+        
         screen.blit(title, (screen.get_width()//2 - title.get_width()//2, 100))
         
         # Опции меню
@@ -112,6 +171,6 @@ class MainMenu:
             text_rect = text.get_rect(center=(screen.get_width()//2, 250 + i * 60))
             screen.blit(text, text_rect)
             
-            # Отладочная рамка (временно)
+            # Рамка для отладки / кликов
             debug_rect = text_rect.inflate(20, 10)
             pygame.draw.rect(screen, (255, 0, 0), debug_rect, 1)

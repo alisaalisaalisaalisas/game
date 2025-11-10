@@ -47,21 +47,28 @@ class RPGPlatformer:
         self.game_start_time = pygame.time.get_ticks()
     
         try:
-            # 🔥 ВАЖНО: Сначала создаем уровень, потом игрока
+            # 🔥 Сначала создаем уровень, потом игрока
             self.level = Level("level1")
             
-        
-            # 🔥 ИГРОК СОЗДАЕТСЯ В ПОЗИЦИИ (0,0), НО СРАЗУ ПЕРЕМЕЩАЕТСЯ
+            # Игрок создаётся и затем привязывается к уровню
             self.player = Player(0, 0)
-       
-        
-            # 🔥 УСТАНАВЛИВАЕМ ИГРОКА В УРОВНЕ (ЭТО ПЕРЕМЕСТИТ ЕГО НА СПАВН)
-            self.level.set_player(self.player)   
+            self.level.set_player(self.player)
                      
             self.camera = Camera(self.player, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
             self.hud = HUD(self.player)
+
+            # Подключаем завершение уровня к МЕНЮ (экран выбора действия после победы)
+            def on_level_complete(level_name: str):
+                print(f"🏁 Level '{level_name}' completed, opening level-complete menu")
+                # Переключаемся в состояние "menu", но меню будет показывать опции завершения уровня
+                self.state = "menu"
+                # Обновляем меню на режим завершения уровня
+                if isinstance(self.menu, MainMenu):
+                    self.menu.set_level_completed(level_name)
+
+            self.level.on_level_complete = on_level_complete
             
-            # 🔄 НОВОЕ: Устанавливаем флаг активной игры
+            # 🔄 Флаг активной игры
             self.has_active_game = True
         
             print("✅ Игра запущена!")
@@ -89,14 +96,19 @@ class RPGPlatformer:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+                return
             
-            # Передаем события в текущее состояние
+            # Состояние: меню
             if self.state == "menu":
                 self.menu.handle_event(event)
-            elif self.state == "game" and self.player:
+                continue
+
+            # Состояние: игра
+            if self.state == "game" and self.player and self.level:
+                # Обычный игровой ввод
                 self.player.handle_event(event)
-                
-                # Обработка выхода в меню
+
+                # ESC → переход в меню
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     self.go_to_menu()
     
