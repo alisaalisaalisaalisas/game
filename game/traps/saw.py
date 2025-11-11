@@ -64,7 +64,6 @@ class Saw(pygame.sprite.Sprite):
         if self.animation_timer >= self.animation_speed:
             self.animation_timer = 0
             self.current_frame = (self.current_frame + 1) % len(self.animation_frames)
-            print(f"🔄 Смена кадра пилы: {self.current_frame}")  # Отладка
 
         # Обновляем изображение с текущим кадром
         self.image = self.animation_frames[self.current_frame]
