@@ -35,6 +35,12 @@ class Snail(pygame.sprite.Sprite):
         self.gravity = 1500
         self.facing_right = False
 
+        # 🔒 Стартовая позиция и патруль вокруг неё
+        self.start_x = x
+        self.start_y = y
+        self.patrol_left = x - 200
+        self.patrol_right = x + 200
+
         # Состояния
         self.health_component = HealthComponent(30)
         self.is_invincible = False
@@ -99,6 +105,20 @@ class Snail(pygame.sprite.Sprite):
         # Применяем движение
         self.rect.x += self.velocity.x * dt
         self.rect.y += self.velocity.y * dt
+
+        # Ограничиваем патруль по X
+        if self.rect.x < self.patrol_left:
+            self.rect.x = self.patrol_left
+            self.direction = 1
+        elif self.rect.x > self.patrol_right:
+            self.rect.x = self.patrol_right
+            self.direction = -1
+
+        # Защита от бесконечного падения, аналогично Slime
+        if self.rect.y > self.start_y + 2000:
+            self.rect.y = self.start_y
+            self.velocity.y = 0
+            print("⚠️ Snail position clamped to prevent flying/falling away")
 
         # Обновляем направление
         if self.velocity.x > 0:

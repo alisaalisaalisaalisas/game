@@ -68,18 +68,62 @@ class Level:
             asset_loader.load_tileset(path, firstgid, tilewidth, tileheight)
 
     def set_player(self, player):
-        """Установить ссылку на игрока"""
+        """Установить ссылку на игрока и сбросить состояние врагов при новом запуске уровня"""
         self.player = player
         if self.player:
+            # Позиция и респаун игрока
             self.player.rect.x = self.player_spawn_point[0]
             self.player.rect.y = self.player_spawn_point[1]
             self.player.respawn_position = self.player_spawn_point
+
+            # Жёсткий сброс состояния всех врагов при каждом New Game
             for enemy in self.enemies:
-                if hasattr(enemy, "update_animation"):
-                    enemy.update_animation(0)
+                # Сброс скоростей
+                if hasattr(enemy, "velocity"):
+                    enemy.velocity.x = 0
+                    enemy.velocity.y = 0
+
+                # Сброс флагов состояния (если есть)
+                for attr in (
+                    "is_dead",
+                    "is_hurt",
+                    "is_invincible",
+                    "will_die_after_hurt",
+                ):
+                    if hasattr(enemy, attr):
+                        setattr(enemy, attr, False)
+
+                if hasattr(enemy, "invincibility_timer"):
+                    enemy.invincibility_timer = 0
+                if hasattr(enemy, "hurt_timer"):
+                    enemy.hurt_timer = 0
+                if hasattr(enemy, "death_timer"):
+                    enemy.death_timer = 0
+
+                # Специфические настройки для типов
+                from ..enemies.slime import Slime as _SlimeType
+                from ..enemies.snail import Snail as _SnailType
+
+                if isinstance(enemy, _SlimeType):
+                    enemy.direction = 1
+                    enemy.facing_right = True
+                    enemy.current_state = "idle"
+                    if hasattr(enemy, "idle_sprite"):
+                        enemy.current_sprite = enemy.idle_sprite
+                        enemy.image = enemy.current_sprite
+
+                elif isinstance(enemy, _SnailType):
+                    enemy.direction = 1
+                    enemy.facing_right = False
+
                 # Убедимся что у врага есть изображение
                 if not hasattr(enemy, "image") or enemy.image is None:
                     print(f"⚠️ У врага {enemy.__class__.__name__} нет изображения!")
+
+            # Обновим анимации после сброса
+            for enemy in self.enemies:
+                if hasattr(enemy, "update_animation"):
+                    enemy.update_animation(0)
 
     def decode_layer_data(self, encoded_data):
         """Декодирование данных слоя тайлов из base64+zlib"""
@@ -230,6 +274,10 @@ class Level:
             # fly (GID 475 = 417 + 58)
             (2308, 1648 - 128, 128, 128, "fly"),
         ]
+
+        # При каждом создании уровня гарантированно создаём НОВЫЕ инстансы врагов.
+        # Это важно: если где-то старый Level не был очищен, мы не переиспользуем "улетевших" врагов.
+        self.enemies.empty()
 
         for x, y, w, h, enemy_type in enemies_data:
             enemy = None
@@ -499,18 +547,3 @@ class Level:
         # 5. Предметы
         for item in self.items:
             item.draw(screen, camera)
-
-        print(f"🎨 Отрисовка {len(self.enemies)} врагов:")
-        for enemy in self.enemies:
-            # Отладка позиций и видимости
-            screen_x = enemy.rect.x - camera.offset.x
-            screen_y = enemy.rect.y - camera.offset.y
-            is_visible = (
-                -200 < screen_x < screen.get_width() + 200
-                and -200 < screen_y < screen.get_height() + 200
-            )
-            print(
-                f"  - {enemy.__class__.__name__} at world({enemy.rect.x}, {enemy.rect.y}) "
-                f"-> screen({screen_x}, {screen_y}), visible: {is_visible}, "
-                f"has_image: {hasattr(enemy, 'image') and enemy.image is not None}"
-            )
