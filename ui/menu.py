@@ -41,6 +41,11 @@ class MainMenu:
             "Назад",
         ]
 
+        # Добавляем переменные для отслеживания состояния мыши в настройках
+        self.dragging_slider = None  # Какой слайдер перетаскивается (master, music, sfx)
+        self.slider_width = 300  # Ширина слайдера в пикселях
+        self.slider_height = 10  # Высота слайдера в пикселях
+
         print("📋 MainMenu initialized")
         print(f"📱 Menu app reference: {self.app}")
 
@@ -191,7 +196,15 @@ class MainMenu:
             self.settings_mode = False
             return
 
-        if event.type == pygame.KEYDOWN:
+        # Обработка событий мыши для слайдеров
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            self.handle_settings_mouse_down(event.pos, audio)
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            if self.dragging_slider:
+                self.dragging_slider = None
+        elif event.type == pygame.MOUSEMOTION:
+            self.handle_settings_mouse_motion(event.pos, audio)
+        elif event.type == pygame.KEYDOWN:
             key_name = pygame.key.name(event.key)
             print(f"⌨️ Settings key: {key_name}")
 
@@ -204,10 +217,12 @@ class MainMenu:
                 self.settings_selected_index = (self.settings_selected_index + 1) % len(
                     self.settings_options
                 )
+                self.play_ui_sound("ui_menu_move")  # Добавляем звук при навигации
             elif event.key == pygame.K_UP:
                 self.settings_selected_index = (self.settings_selected_index - 1) % len(
                     self.settings_options
                 )
+                self.play_ui_sound("ui_menu_move")  # Добавляем звук при навигации
 
             # Регулировка значений стрелками влево/вправо и Enter для mute/назад
             if event.key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN):
@@ -221,8 +236,10 @@ class MainMenu:
                     audio.set_sfx_volume(audio.settings.sfx_volume + step)
                 elif opt == "Mute / Unmute" and event.key == pygame.K_RETURN:
                     audio.toggle_mute()
+                    self.play_ui_sound("ui_button_click")  # Добавляем звук при переключении
                 elif opt == "Назад" and event.key == pygame.K_RETURN:
                     self.settings_mode = False
+                    self.play_ui_sound("ui_button_click")  # Добавляем звук при выходе
 
                 # Применяем и сохраняем настройки
                 audio.apply_volumes()
@@ -273,6 +290,105 @@ class MainMenu:
         except Exception as e:
             print(f"[Audio][UI] WARNING: failed to play '{key}': {e}")
 
+    def handle_settings_mouse_down(self, mouse_pos, audio):
+        """Обработка нажатия мыши в меню настроек."""
+        # Проверяем, нажал ли пользователь на один из слайдеров громкости
+        base_y = 220
+        slider_x = self.app.screen.get_width() // 2 - self.slider_width // 2
+
+        # Проверяем каждый слайдер
+        for i, opt in enumerate(self.settings_options):
+            if opt in ["Громкость MASTER", "Громкость MUSIC", "Громкость SFX"]:
+                slider_y = base_y + i * 60 + 25
+                slider_rect = pygame.Rect(slider_x, slider_y, self.slider_width, self.slider_height)
+
+                if slider_rect.collidepoint(mouse_pos):
+                    # Определяем, какой слайдер перетаскиваем
+                    self.dragging_slider = opt.split()[1].lower()  # "master", "music" или "sfx"
+                    # Вычисляем новое значение громкости на основе позиции мыши
+                    relative_x = mouse_pos[0] - slider_x
+                    new_volume = max(0.0, min(1.0, relative_x / self.slider_width))
+
+                    # Применяем новое значение
+                    if self.dragging_slider == "master":
+                        audio.set_master_volume(new_volume)
+                    elif self.dragging_slider == "music":
+                        audio.set_music_volume(new_volume)
+                    elif self.dragging_slider == "sfx":
+                        audio.set_sfx_volume(new_volume)
+
+                    # Применяем и сохраняем настройки
+                    audio.apply_volumes()
+                    try:
+                        audio.settings.save()
+                    except Exception as e:
+                        print(f"[Audio] WARNING: cannot save settings from menu: {e}")
+
+                    # Воспроизводим звук при изменении громкости
+                    self.play_ui_sound("ui_menu_move")
+                    return
+
+            # Обработка клика на другие опции (Mute/Unmute и Назад)
+            elif opt in ["Mute / Unmute", "Назад"]:
+                text = self.font.render(opt, True, (255, 255, 255))
+                text_rect = text.get_rect(center=(self.app.screen.get_width() // 2, base_y + i * 60))
+
+                if text_rect.collidepoint(mouse_pos):
+                    if opt == "Mute / Unmute":
+                        audio.toggle_mute()
+                    else:  # Назад
+                        self.settings_mode = False
+
+                    # Применяем и сохраняем настройки
+                    audio.apply_volumes()
+                    try:
+                        audio.settings.save()
+                    except Exception as e:
+                        print(f"[Audio] WARNING: cannot save settings from menu: {e}")
+
+                    # Воспроизводим звук при клике
+                    self.play_ui_sound("ui_button_click")
+                    return
+
+    def handle_settings_mouse_motion(self, mouse_pos, audio):
+        """Обработка движения мыши при перетаскивании слайдера."""
+        if self.dragging_slider is None:
+            # Просто подсвечиваем опцию при наведении
+            base_y = 220
+            for i, opt in enumerate(self.settings_options):
+                text = self.font.render(opt, True, (255, 255, 255))
+                text_rect = text.get_rect(center=(self.app.screen.get_width() // 2, base_y + i * 60))
+
+                if text_rect.collidepoint(mouse_pos):
+                    if self.settings_selected_index != i:
+                        self.settings_selected_index = i
+                        # Воспроизводим звук при наведении на новую опцию
+                        self.play_ui_sound("ui_menu_move")
+                    return
+            return
+
+        # Обработка перетаскивания слайдера
+        slider_x = self.app.screen.get_width() // 2 - self.slider_width // 2
+
+        # Вычисляем новое значение громкости на основе позиции мыши
+        relative_x = mouse_pos[0] - slider_x
+        new_volume = max(0.0, min(1.0, relative_x / self.slider_width))
+
+        # Применяем новое значение
+        if self.dragging_slider == "master":
+            audio.set_master_volume(new_volume)
+        elif self.dragging_slider == "music":
+            audio.set_music_volume(new_volume)
+        elif self.dragging_slider == "sfx":
+            audio.set_sfx_volume(new_volume)
+
+        # Применяем и сохраняем настройки
+        audio.apply_volumes()
+        try:
+            audio.settings.save()
+        except Exception as e:
+            print(f"[Audio] WARNING: cannot save settings from menu: {e}")
+
     def draw_settings(self, screen):
         """Отрисовка простого меню аудио-настроек."""
         screen.fill((20, 20, 40))
@@ -288,29 +404,63 @@ class MainMenu:
             )
             return
 
-        values = {
-            "Громкость MASTER": f"{audio.settings.master_volume:.1f}",
-            "Громкость MUSIC": f"{audio.settings.music_volume:.1f}",
-            "Громкость SFX": f"{audio.settings.sfx_volume:.1f}",
-            "Mute / Unmute": "ON" if audio.settings.muted else "OFF",
-            "Назад": "",
-        }
-
         base_y = 220
+        slider_x = screen.get_width() // 2 - self.slider_width // 2
+
         for i, opt in enumerate(self.settings_options):
             is_selected = i == self.settings_selected_index
             color = (255, 255, 0) if is_selected else (220, 220, 220)
-            label = opt
-            if values[opt]:
-                label = f"{opt}: {values[opt]}"
-            text = self.font.render(label, True, color)
-            text_rect = text.get_rect(center=(screen.get_width() // 2, base_y + i * 60))
-            screen.blit(text, text_rect)
 
-            if is_selected:
-                pygame.draw.rect(
-                    screen,
-                    (255, 255, 0),
-                    text_rect.inflate(20, 10),
-                    2,
-                )
+            # Рисуем текст опции
+            if opt in ["Громкость MASTER", "Громкость MUSIC", "Громкость SFX"]:
+                # Для опций громкости рисуем текст и слайдер
+                volume_value = 0.0
+                if opt == "Громкость MASTER":
+                    volume_value = audio.settings.master_volume
+                elif opt == "Громкость MUSIC":
+                    volume_value = audio.settings.music_volume
+                elif opt == "Громкость SFX":
+                    volume_value = audio.settings.sfx_volume
+
+                # Рисуем название опции
+                text = self.font.render(f"{opt}: {volume_value:.1f}", True, color)
+                text_rect = text.get_rect(center=(screen.get_width() // 2, base_y + i * 60))
+                screen.blit(text, text_rect)
+
+                # Рисуем слайдер
+                slider_y = base_y + i * 60 + 25
+                # Фон слайдера
+                pygame.draw.rect(screen, (100, 100, 100), (slider_x, slider_y, self.slider_width, self.slider_height))
+                # Заполненная часть слайдера
+                fill_width = int(self.slider_width * volume_value)
+                pygame.draw.rect(screen, (200, 200, 200), (slider_x, slider_y, fill_width, self.slider_height))
+                # Ручка слайдера
+                handle_x = slider_x + fill_width
+                handle_rect = pygame.Rect(handle_x - 5, slider_y - 5, 10, self.slider_height + 10)
+                pygame.draw.rect(screen, (255, 255, 255), handle_rect)
+
+                # Подсветка при выборе
+                if is_selected:
+                    pygame.draw.rect(
+                        screen,
+                        (255, 255, 0),
+                        text_rect.inflate(20, 30),
+                        2,
+                    )
+            else:
+                # Для других опций рисуем только текст
+                label = opt
+                if opt == "Mute / Unmute":
+                    label = f"{opt}: {'ON' if audio.settings.muted else 'OFF'}"
+                text = self.font.render(label, True, color)
+                text_rect = text.get_rect(center=(screen.get_width() // 2, base_y + i * 60))
+                screen.blit(text, text_rect)
+
+                # Подсветка при выборе
+                if is_selected:
+                    pygame.draw.rect(
+                        screen,
+                        (255, 255, 0),
+                        text_rect.inflate(20, 10),
+                        2,
+                    )
