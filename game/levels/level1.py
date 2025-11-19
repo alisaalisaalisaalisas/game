@@ -431,14 +431,36 @@ class Level:
         }
         return decoration_types.get(gid, "f")
 
+    def _compute_update_rect(self) -> pygame.Rect:
+        """Вычисляет область, в которой нужно обновлять объекты (окрестность игрока).
+
+        Если игрока нет (например, при ошибке инициализации), обновляем весь уровень.
+        """
+        if not self.player:
+            return pygame.Rect(0, 0, self.width, self.height)
+
+        half_w, half_h = 700, 400
+        margin = 400
+        cx, cy = self.player.rect.center
+        return pygame.Rect(
+            cx - half_w - margin,
+            cy - half_h - margin,
+            2 * (half_w + margin),
+            2 * (half_h + margin),
+        )
+
     def update(self, dt):
-        """Обновление уровня"""
+        """Обновление уровня с локализованными апдейтами."""
+        update_rect = self._compute_update_rect()
+
         for enemy in self.enemies:
-            enemy.update(dt, self)
-            self.check_enemy_collisions(enemy)
+            if enemy.rect.colliderect(update_rect):
+                enemy.update(dt, self)
+                self.check_enemy_collisions(enemy)
 
         for trap in self.traps:
-            trap.update(dt, self)
+            if hasattr(trap, "rect") and trap.rect.colliderect(update_rect):
+                trap.update(dt, self)
 
         if self.player:
             self.check_item_collection()

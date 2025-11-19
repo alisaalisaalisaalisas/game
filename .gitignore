@@ -1,0 +1,134 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+*.pyd
+*.dll
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+#  Usually these files are written by a Python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other info.
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+.pytype/
+
+# Type checkers / linters
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.pyre/
+
+# Virtual environments
+.venv/
+venv/
+env/
+env.bak/
+venv.bak/
+.virtualenvs/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDE / editor settings
+.vscode/
+.vscode-test/
+.idea/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+Icon?
+*.lnk
+
+# Logs and temporary files
+*.log
+logs/
+log/
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+
+# Environment / local config
+.env
+.env.*
+*.env
+
+# Project-specific: game/runtime caches & logs
+# (Do NOT ignore real shipped assets under game/assets/)
+game/**/cache/
+game/**/Cache/
+game/**/tmp/
+game/**/temp/
+game/**/logs/
+game/**/Logs/
+game/**/profiling/
+game/**/replays/
+game/**/screenshots_tmp/
+
+# Project-specific: temporary build/export folders
+exports/
+export/
+builds/
+build_artifacts/
+release/
+releases/
+
+# Project-specific: test artifacts and temp outputs
+.test-results/
+test-results/
+junit-report.xml
+coverage-html/
+/tests/.pytest_cache/
+/tests/__pycache__/
+/tests/**/cache/
+/tests/**/tmp/
+/tests/**/temp/

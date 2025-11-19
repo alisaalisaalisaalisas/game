@@ -1,0 +1,29 @@
+{
+    "video": {
+        "width": 1400,
+        "height": 800,
+        "fullscreen": false
+    },
+    "audio": {
+        "master": 1.0,
+        "music": 1.0,
+        "sfx": 1.0
+    },
+    "input": {
+        "jump": "SPACE",
+        "left": [
+            "LEFT",
+            "A"
+        ],
+        "right": [
+            "RIGHT",
+            "D"
+        ],
+        "escape_to_menu": "ESCAPE"
+    },
+    "ui": {
+        "debug_overlay": false,
+        "animations": false,
+        "language": "ru"
+    }
+}

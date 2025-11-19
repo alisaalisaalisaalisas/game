@@ -11,15 +11,22 @@ from game.levels.level1 import Level
 from ui.menu import MainMenu
 from ui.hud import HUD
 from game.assets.audio import AudioManager
+from game.config import load_config
 
 
 class RPGPlatformer:
     def __init__(self):
         pygame.init()
         # Настройки экрана
-        self.SCREEN_WIDTH = 1400
-        self.SCREEN_HEIGHT = 800
-        self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        self.config = load_config()
+        self.SCREEN_WIDTH = self.config.video.width
+        self.SCREEN_HEIGHT = self.config.video.height
+        flags = 0
+        if self.config.video.fullscreen:
+            flags |= pygame.FULLSCREEN
+        self.screen = pygame.display.set_mode(
+            (self.SCREEN_WIDTH, self.SCREEN_HEIGHT), flags
+        )
         pygame.display.set_caption("2D PLATFORMER")
 
         self.clock = pygame.time.Clock()
