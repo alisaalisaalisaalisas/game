@@ -56,6 +56,7 @@ class MainMenu:
         self.slider_width = 400  # Ширина слайдера в пикселях
         self.slider_height = 20  # Высота слайдера в пикселях
         self.option_spacing = 100  # Увеличенное расстояние между опциями
+        self.last_hover_index = -1  # Track last hovered item to prevent sound spam
 
         print("📋 MainMenu initialized")
         print(f"📱 Menu app reference: {self.app}")
@@ -142,6 +143,8 @@ class MainMenu:
                 if self.selected_index != i:
                     self.selected_index = i
                     print(f"🖱️ Mouse over: {option}")
+                    # Play hover sound when selection changes
+                    self.play_ui_sound("ui_menu_move")
                 break
 
     def select_option(self):
@@ -217,6 +220,12 @@ class MainMenu:
             self.handle_settings_mouse_down(event.pos, audio)
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             if self.dragging_slider:
+                # Apply and save settings only when dragging ends
+                audio.apply_volumes()
+                try:
+                    audio.settings.save()
+                except Exception as e:
+                    print(f"[Audio] WARNING: cannot save settings from menu: {e}")
                 self.dragging_slider = None
         elif event.type == pygame.MOUSEMOTION:
             self.handle_settings_mouse_motion(event.pos, audio)
@@ -363,20 +372,13 @@ class MainMenu:
                     relative_x = mouse_pos[0] - slider_x
                     new_volume = max(0.0, min(1.0, relative_x / self.slider_width))
 
-                    # Применяем новое значение
+                    # Устанавливаем новое значение (без немедленного apply)
                     if self.dragging_slider == "master":
-                        audio.set_master_volume(new_volume)
+                        audio.settings.master_volume = new_volume
                     elif self.dragging_slider == "music":
-                        audio.set_music_volume(new_volume)
+                        audio.settings.music_volume = new_volume
                     elif self.dragging_slider == "sfx":
-                        audio.set_sfx_volume(new_volume)
-
-                    # Применяем и сохраняем настройки
-                    audio.apply_volumes()
-                    try:
-                        audio.settings.save()
-                    except Exception as e:
-                        print(f"[Audio] WARNING: cannot save settings from menu: {e}")
+                        audio.settings.sfx_volume = new_volume
 
                     # Воспроизводим звук при изменении громкости
                     self.play_ui_sound("ui_menu_move")
@@ -432,8 +434,8 @@ class MainMenu:
                     button_width = 300
                     button_height = 50
                     button_x = self.app.screen.get_width() // 2 - button_width // 2
-                    button_y = base_y + i * 60 - 25
-                    button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+                    button_y = base_y + i * self.option_spacing
+                    button_rect = pygame.Rect(button_x, button_y - 25, button_width, button_height)
 
                     if button_rect.collidepoint(mouse_pos):
                         if self.settings_selected_index != i:
@@ -447,24 +449,16 @@ class MainMenu:
         slider_x = self.app.screen.get_width() // 2 - self.slider_width // 2
 
         # Вычисляем новое значение громкости на основе позиции мыши
-        # Добавляем небольшой зазор для более точного управления
         relative_x = mouse_pos[0] - slider_x
         new_volume = max(0.0, min(1.0, relative_x / self.slider_width))
 
-        # Применяем новое значение
+        # Обновляем значение напрямую (apply будет вызван при отпускании кнопки)
         if self.dragging_slider == "master":
-            audio.set_master_volume(new_volume)
+            audio.settings.master_volume = new_volume
         elif self.dragging_slider == "music":
-            audio.set_music_volume(new_volume)
+            audio.settings.music_volume = new_volume
         elif self.dragging_slider == "sfx":
-            audio.set_sfx_volume(new_volume)
-
-        # Применяем и сохраняем настройки
-        audio.apply_volumes()
-        try:
-            audio.settings.save()
-        except Exception as e:
-            print(f"[Audio] WARNING: cannot save settings from menu: {e}")
+            audio.settings.sfx_volume = new_volume
 
     def draw_settings(self, screen):
         """Отрисовка простого меню аудио-настроек."""
@@ -551,23 +545,23 @@ class MainMenu:
                 # Основная ручка
                 pygame.draw.rect(screen, (240, 240, 240), handle_rect, border_radius=handle_size // 2)
                 
-                # Обводка ручки
+                # Обводка ручки - subtle highlight instead of bright yellow
                 if is_selected:
-                    pygame.draw.rect(screen, (255, 255, 0), handle_rect, 3, border_radius=handle_size // 2)
+                    pygame.draw.rect(screen, (200, 200, 255), handle_rect, 3, border_radius=handle_size // 2)
                 else:
                     pygame.draw.rect(screen, (180, 180, 200), handle_rect, 2, border_radius=handle_size // 2)
 
-                # Подсветка при выборе - рамка вокруг всего элемента
+                # Subtle selection indicator - soft glow instead of harsh outline
                 if is_selected:
                     selection_rect = pygame.Rect(slider_x - 15, base_y + i * self.option_spacing - 15, 
                                                   self.slider_width + 30, 65)
-                    pygame.draw.rect(screen, (255, 255, 0), selection_rect, 2, border_radius=10)
+                    pygame.draw.rect(screen, (150, 150, 200, 80), selection_rect, 2, border_radius=10)
             else:
                 # Для других опций рисуем кнопки как в главном меню
                 button_width = 300
                 button_height = 50
                 button_x = screen.get_width() // 2 - button_width // 2
-                button_y = base_y + i * 60 - 25
+                button_y = base_y + i * self.option_spacing - 25
                 button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
 
                 # Draw button background with highlight for selected item
@@ -581,17 +575,7 @@ class MainMenu:
                 # Draw text
                 label = opt
                 if opt == "Mute / Unmute":
-                    label = f"{opt}: {'ON' if audio.settings.muted else 'OFF'}"
+                    label = f"Mute/Unmute: {'ON' if audio.settings.muted else 'OFF'}"
                 text = self.font.render(label, True, color)
-                text_rect = text.get_rect(center=(screen.get_width() // 2, base_y + i * self.option_spacing))
+                text_rect = text.get_rect(center=button_rect.center)
                 screen.blit(text, text_rect)
-
-                # Подсветка при выборе
-                if is_selected:
-                    pygame.draw.rect(
-                        screen,
-                        (255, 255, 0),
-                        text_rect.inflate(20, 10),
-                        2,
-                        border_radius=5,
-                    )
