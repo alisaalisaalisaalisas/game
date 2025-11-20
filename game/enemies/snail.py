@@ -187,13 +187,3 @@ class Snail(pygame.sprite.Sprite):
             screen.blit(flipped_sprite, screen_rect)
         else:
             screen.blit(self.image, screen_rect)
-
-        # Отрисовка хитбокса (для отладки)
-        if self.show_hitbox:
-            hitbox_rect = pygame.Rect(
-                screen_rect.x + self.hitbox.x,
-                screen_rect.y + self.hitbox.y,
-                self.hitbox.width,
-                self.hitbox.height,
-            )
-            pygame.draw.rect(screen, (255, 0, 0), hitbox_rect, 2)

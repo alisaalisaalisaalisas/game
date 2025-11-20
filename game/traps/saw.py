@@ -79,8 +79,3 @@ class Saw(pygame.sprite.Sprite):
         # Отрисовка изображения по его оригинальному rect
         image_screen_rect = self.image_rect.move(-camera.offset.x, -camera.offset.y)
         screen.blit(self.image, image_screen_rect)
-
-        # Отрисовка уменьшенного хитбокса (для отладки)
-        if self.show_hitbox:
-            hitbox_screen_rect = self.rect.move(-camera.offset.x, -camera.offset.y)
-            pygame.draw.rect(screen, (255, 0, 0), hitbox_screen_rect, 2)

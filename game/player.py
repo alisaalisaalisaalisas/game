@@ -86,6 +86,9 @@ class Player:
         self.blocked_left = False
         self.blocked_right = False
 
+        # Callback, который может быть установлен уровнем для обработки удара по ящику
+        self.on_box_hit = None
+
         self.health_component = self.HealthComponent(60)
         print(f"🎯 Player created at position: ({x}, {y})")
 
@@ -330,6 +333,14 @@ class Player:
                     self.time_since_ground = 0
 
                 elif self.velocity_y < 0:  # Движение вверх
+                    # Ударились головой о нижнюю часть платформы
+                    if getattr(platform, "platform_type", None) == "box" and callable(
+                        getattr(self, "on_box_hit", None)
+                    ):
+                        try:
+                            self.on_box_hit(platform)
+                        except Exception as e:
+                            print(f"[Player] on_box_hit callback failed: {e}")
                     self.rect.top = platform_bottom
                     self.velocity_y = 0
                 break
@@ -601,9 +612,3 @@ class Player:
                 screen.blit(flipped_sprite, (screen_x, screen_y))
             else:
                 screen.blit(self.current_sprite, (screen_x, screen_y))
-
-        if self.show_hitbox:
-            hitbox_rect = self.get_actual_hitbox()
-            hitbox_rect.x -= camera.offset.x
-            hitbox_rect.y -= camera.offset.y
-            pygame.draw.rect(screen, (255, 0, 0), hitbox_rect, 2)

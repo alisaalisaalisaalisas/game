@@ -32,14 +32,19 @@ class MainMenu:
         self.background = self.load_background_image()
 
         # Menu options for standard mode
-        self.standard_menu_options = ["Новая игра", "Настройки", "Кредиты", "Выход"]
+        self.standard_menu_options = [
+            "Новая игра",
+            "Настройки",
+            "Разработчики",
+            "Выход",
+        ]
 
         # Menu options when there's an active game
         self.active_game_menu_options = [
             "Продолжить игру",
             "Новая игра",
             "Настройки",
-            "Кредиты",
+            "Разработчики",
             "Выход",
         ]
 
@@ -235,8 +240,8 @@ class MainMenu:
             print("⚙️ Open audio settings menu")
             self.settings_mode = True
             self.settings_selected_index = 0
-        elif option == "Кредиты":
-            print("📝 Show credits")
+        elif option == "Разработчики":
+            print("📝 Show developers")
             self.app.go_to_credits()
         elif option == "Выход":
             print("👋 Exiting game...")
@@ -365,7 +370,7 @@ class MainMenu:
                 title_text += f" ({self.completed_level_name})"
             title = self.title_font.render(title_text, True, (255, 255, 0))
         else:
-            title = self.title_font.render("MUSHROOM ADVENTURE", True, (255, 255, 255))
+            title = self.title_font.render("2D PLATFORMER", True, (255, 255, 255))
 
         screen.blit(title, (screen.get_width() // 2 - title.get_width() // 2, 100))
 

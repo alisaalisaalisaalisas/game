@@ -327,13 +327,3 @@ class Slime(pygame.sprite.Sprite):
                 screen.blit(self.current_sprite, (screen_x, screen_y))
         else:
             pygame.draw.rect(screen, (255, 0, 0), (screen_x, screen_y, 40, 60))
-
-        # Отрисовка хитбокса (для отладки)
-        if self.show_hitbox:
-            hitbox_rect = pygame.Rect(
-                screen_x + self.hitbox.x,
-                screen_y + self.hitbox.y,
-                self.hitbox.width,
-                self.hitbox.height,
-            )
-            pygame.draw.rect(screen, (255, 0, 0), hitbox_rect, 2)

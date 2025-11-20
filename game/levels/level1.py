@@ -76,6 +76,10 @@ class Level:
             self.player.rect.y = self.player_spawn_point[1]
             self.player.respawn_position = self.player_spawn_point
 
+            # Callback для удара игроком по ящику box (спавн монеты)
+            if hasattr(self.player, "on_box_hit"):
+                self.player.on_box_hit = self.spawn_coin_from_box
+
             # Жёсткий сброс состояния всех врагов при каждом New Game
             for enemy in self.enemies:
                 # Сброс скоростей
@@ -137,6 +141,72 @@ class Level:
             for enemy in self.enemies:
                 if hasattr(enemy, "update_animation"):
                     enemy.update_animation(0)
+
+    def spawn_coin_from_box(self, box_platform):
+        """При ударе по ящику box создаёт монету, уничтожает ящик и заставляет монету падать на землю."""
+        if not box_platform or getattr(box_platform, "platform_type", None) != "box":
+            return
+
+        # Каждый ящик должен выдавать монету только один раз, пока уровень не будет пересоздан
+        if getattr(box_platform, "coin_spawned", False):
+            return
+
+        box_rect = box_platform.rect
+
+        # Найдём первую твёрдую платформу под ящиком, чтобы знать, где монета должна приземлиться
+        ground_y = None
+        for platform in self.platforms:
+            if platform is box_platform:
+                continue
+            if not getattr(platform, "has_collision", True):
+                continue
+
+            # Горизонтальное пересечение
+            if (
+                platform.rect.right <= box_rect.left
+                or platform.rect.left >= box_rect.right
+            ):
+                continue
+
+            # Платформа должна находиться ниже низа ящика
+            if platform.rect.top >= box_rect.bottom:
+                if ground_y is None or platform.rect.top < ground_y:
+                    ground_y = platform.rect.top
+
+        # На всякий случай, если не нашли платформу (не должно случиться на нормальной карте)
+        if ground_y is None:
+            ground_y = box_rect.bottom + 5 * 128
+
+        coin = Item(
+            box_rect.x,
+            box_rect.y,
+            box_rect.width,
+            box_rect.height,
+            "coin",
+        )
+
+        # Стартуем монету снизу ящика и даём ей цель падения до земли
+        coin.rect.bottom = box_rect.bottom
+        coin.fall_to_ground_y = ground_y
+        coin.fall_speed = 0.0
+
+        self.items.add(coin)
+        box_platform.coin_spawned = True
+
+        # Удаляем ящик: он считается разрушенным и больше не блокирует движение
+        try:
+            self.platforms.remove(box_platform)
+        except ValueError:
+            # Если ящик уже удалён из группы — просто игнорируем
+            pass
+
+        # Небольшой звуковой эффект (используем тот же, что и для сбора монеты)
+        try:
+            audio = AudioManager.get_instance()
+            if audio:
+                audio.sfx.play("player_collect_coin")
+        except Exception as e:
+            print(f"[Audio][Level1] spawn_coin_from_box sfx failed: {e}")
 
     def decode_layer_data(self, encoded_data):
         """Декодирование данных слоя тайлов из base64+zlib"""
@@ -489,6 +559,11 @@ class Level:
                 trap.update(dt, self)
 
         if self.player:
+            # Обновляем анимацию для динамических предметов (например, монет из ящиков)
+            for item in self.items:
+                if hasattr(item, "update"):
+                    item.update(dt)
+
             self.check_item_collection()
             self.check_exit_door_collision()
 
