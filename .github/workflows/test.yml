@@ -23,7 +23,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pygame
           pip install pytest
-          pip install unittest
+          pip install unittest2
       - name: Run all tests
         run: |
           pytest tests/ -v --tb=short
