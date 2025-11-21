@@ -414,7 +414,7 @@ class MainMenu:
             # Get the path to the background image
             base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             background_path = os.path.join(
-                base_path, "game", "assets", "Backgrounds", "colored_shroom.png"
+                base_path, "game", "assets", "Backgrounds", "colored_land.png"
             )
 
             # Load and scale the image to fit the screen
