@@ -488,7 +488,15 @@ class Player:
 
     def check_enemy_collisions(self, enemies, current_time):
         """Проверяет столкновения с врагами"""
-        for enemy in enemies.sprites():
+        if not enemies:
+            return
+
+        if hasattr(enemies, "sprites"):
+            enemy_iterable = enemies.sprites()
+        else:
+            enemy_iterable = enemies
+
+        for enemy in enemy_iterable:
             if hasattr(enemy, "is_dead") and enemy.is_dead:
                 continue
             if hasattr(enemy, "is_hurt") and enemy.is_hurt:

@@ -1,6 +1,7 @@
 import unittest
 import sys
 import os
+from collections import defaultdict
 import pygame
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -45,6 +46,10 @@ class TestPlayer(unittest.TestCase):
         # Создаем платформу под игроком
         platforms = [Platform(0, 400, 800, 50)]
 
+        # Поднимаем игрока повыше, чтобы он точно находился в воздухе
+        self.player.rect.y = 200
+        self.player.on_ground = False
+
         # Игрок должен падать из-за гравитации
         initial_y = self.player.rect.y
         self.player.update(platforms, [], 0)  # enemies=[], current_time=0
@@ -69,8 +74,8 @@ class TestPlayer(unittest.TestCase):
 
     def test_player_input_handling(self):
         """Тест обработки ввода игрока"""
-        # Создаем mock для keys с достаточным размером
-        keys = [0] * 512  # Создаем список "ненажатых" клавиш (достаточно большой)
+        # Создаем mock для keys, который ведёт себя как возврат pygame.key.get_pressed()
+        keys = defaultdict(int)
         keys[pygame.K_LEFT] = 1  # Симулируем нажатие LEFT
 
         platforms = []  # Пустой список платформ для тестов

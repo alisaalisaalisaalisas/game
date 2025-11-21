@@ -1,5 +1,6 @@
 import pygame
 import os
+from typing import Optional
 
 
 class MainMenu:
@@ -247,7 +248,7 @@ class MainMenu:
             print("👋 Exiting game...")
             self.app.running = False
 
-    def set_level_completed(self, level_name: str | None = None):
+    def set_level_completed(self, level_name: Optional[str] = None):
         """
         Переключает меню в режим завершения уровня.
         Вызывается из main.py через level.on_level_complete.
