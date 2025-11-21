@@ -13,6 +13,7 @@ from ui.hud import HUD
 from ui.credits import Credits
 from game.assets.audio import AudioManager
 from game.config import load_config
+from game.path_utils import resource_path
 
 
 class RPGPlatformer:
@@ -37,12 +38,7 @@ class RPGPlatformer:
         # Инициализация систем
         # Аудиосистема (глобальный синглтон, базовый путь укажем на каталог audio)
         self.audio = AudioManager.get_instance(
-            base_path=os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "game",
-                "assets",
-                "audio",
-            )
+            base_path=resource_path("game", "assets", "audio")
         )
         self.audio.apply_volumes()
 

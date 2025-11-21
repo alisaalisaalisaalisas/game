@@ -1,6 +1,7 @@
 import pygame
 import os
 from typing import Optional
+from game.path_utils import resource_path
 
 
 class MainMenu:
@@ -411,10 +412,9 @@ class MainMenu:
     def load_background_image(self):
         """Загрузка фонового изображения для меню."""
         try:
-            # Get the path to the background image
-            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            background_path = os.path.join(
-                base_path, "game", "assets", "Backgrounds", "colored_land.png"
+            # Get the path to the background image using resource_path
+            background_path = resource_path(
+                "game", "assets", "Backgrounds", "colored_land.png"
             )
 
             # Load and scale the image to fit the screen

@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from dataclasses import dataclass, asdict
 
 
@@ -49,10 +50,17 @@ class AudioSettings:
     @staticmethod
     def get_save_path() -> str:
         """
-        Store settings JSON in same directory as this module.
+        Store settings JSON in the user's config directory or beside the executable.
+        In PyInstaller mode, saves to the current working directory.
+        In development mode, saves to the audio module directory.
         """
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        return os.path.join(base_dir, "audio_settings.json")
+        if hasattr(sys, "_MEIPASS"):
+            # PyInstaller mode: save to current working directory (beside executable)
+            return os.path.join(os.getcwd(), "audio_settings.json")
+        else:
+            # Development mode: save in the audio module directory
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            return os.path.join(base_dir, "audio_settings.json")
 
     def save(self):
         try:
